@@ -6,8 +6,5 @@ module.exports = game_object = function (pos_x, pos_y) {
     this.pos_y = pos_y;
     this.origin_x = pos_x;
     this.origin_y = pos_y;
-    this.range = 100;
-    this.speed = 25;
-    this.damage = 50;
-    this.hitboxSize = 4;
+    this.type = 'none';
 };

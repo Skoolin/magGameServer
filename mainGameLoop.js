@@ -22,35 +22,42 @@ module.exports = mainGameLoop = {
         var i = map.game_objects.length;
         while(i--) {
             var obj = map.game_objects[i];
-            if (obj.range < dist(obj.pos_x, obj.pos_y, obj.origin_x, obj.origin_y)) {
-                map.game_objects.splice(i, 1);
-            }
-            map.clients.forEach(function (client) {
-                if(client.user === obj.owner) {
-                    return;
-                }
-                var user = client.user;
-                var sqDist = distSq(user.pos_x, user.pos_y, obj.pos_x, obj.pos_y);
-                if (sqDist < obj.hitboxSize * obj.hitboxSize) {
-                    user.currentHealth -= obj.damage;
-                    if(user.currentHealth <= 0) {
-                        user.currentHealth = 0;
-                        console.log('user died: ' + user.username);
-                        user.pos_x = -100;
-                        user.pos_y = -100;
-                        user.target_x = -100;
-                        user.target_y = -100;
-                        client.broadcastroom(packet.build([packet.get1byte(4), packet.get2byteShort(user._id)]));
-                        user.isDead = true;
-                    } else {
-                        client.broadcastroom(packet.build([packet.get1byte(11), packet.get2byteShort(user._id), packet.get2byteShort(user.currentHealth)]));
+            switch (obj.type) {
+                case 'fireball':
+                    if (obj.range < dist(obj.pos_x, obj.pos_y, obj.origin_x, obj.origin_y)) {
+                        map.game_objects.splice(i, 1);
                     }
-                    map.game_objects.splice(i, 1);
-                }
-            });
+                    map.clients.forEach(function (client) {
+                        if(client.user === obj.owner) {
+                            return;
+                        }
+                        var user = client.user;
+                        var sqDist = distSq(user.pos_x, user.pos_y, obj.pos_x, obj.pos_y);
+                        if (sqDist < obj.hitboxSize * obj.hitboxSize) {
+                            user.currentHealth -= obj.damage;
+                            if(user.currentHealth <= 0) {
+                                user.currentHealth = 0;
+                                console.log('user died: ' + user.username);
+                                user.pos_x = -100;
+                                user.pos_y = -100;
+                                user.target_x = -100;
+                                user.target_y = -100;
+                                client.broadcastroom(packet.build([packet.get1byte(4), packet.get2byteShort(user._id)]));
+                                user.isDead = true;
+                            } else {
+                                client.broadcastroom(packet.build([packet.get1byte(11), packet.get2byteShort(user._id), packet.get2byteShort(user.currentHealth)]));
+                            }
+                            map.game_objects.splice(i, 1);
+                        }
+                    });
 
-            obj.pos_x += obj.speed * delta * obj.vel_x;
-            obj.pos_y += obj.speed * delta * obj.vel_y;
+                    obj.pos_x += obj.speed * delta * obj.vel_x;
+                    obj.pos_y += obj.speed * delta * obj.vel_y;
+                    break;
+                default:
+                    map.game_objects.splice(i, 1);
+                    break;
+            }
         }
     }
 };

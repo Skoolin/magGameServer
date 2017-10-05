@@ -4,6 +4,7 @@
 var bufferConcat = require('buffer-concat');
 var zeroBuffer = new Buffer('00', 'hex');
 var now = require('performance-now');
+var spells = require('./game_logic/spells');
 module.exports = packet = {
 
     parse: function(c, datapacket) {
@@ -14,7 +15,7 @@ module.exports = packet = {
                 parseMove(c, datapacket);
                 break;
             case 2: //CAST
-                parseSpell(c, datapacket);
+                spells.parse_spell(c, datapacket);
                 break;
             case 6: //LOGIN
                 data = PacketModels.login.parse(datapacket);
@@ -111,28 +112,6 @@ module.exports = packet = {
         return Buffer.concat([size, dataBuffer], size.length + dataBuffer.length);
     }
 };
-
-function parseSpell(c, datapacket) {
-    var data = PacketModels.cast.parse(datapacket);
-    //TODO check whether spell is allowed by player
-    //TODO extrude all spells into their own methods
-
-    var fireBall = new game_object(c.user.pos_x, c.user.pos_y);
-    var target_x = data.x_pos;
-    var target_y = data.y_pos;
-
-    var x_dir = target_x - c.user.pos_x;
-    var y_dir = target_y - c.user.pos_y;
-
-    var len = Math.sqrt(x_dir*x_dir + y_dir*y_dir);
-
-    fireBall.vel_x = x_dir/len;
-    fireBall.vel_y = y_dir/len;
-    fireBall.owner = c.user;
-
-    maps[c.user.current_room].game_objects.push(fireBall);
-    c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(23), packet.get2byteShort(c.user._id), data.x_pos, data.y_pos, packet.get8byteLong(now())]));
-}
 
 function parseMove(c, datapacket) {
     var data = PacketModels.move.parse(datapacket);

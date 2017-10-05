@@ -25,10 +25,9 @@ module.exports = PacketModels = {
 
     cast: new Parser().skip(4)
         .uint8("command", StringOptions)
-        .bit4("rune_1", StringOptions)
-        .bit4("rune_2", StringOptions)
-        .bit4("rune_3", StringOptions)
-        .bit4("filler", StringOptions)
+        .uint8("rune_1", StringOptions)
+        .uint8("rune_2", StringOptions)
+        .uint8("rune_3", StringOptions)
         .floatbe("x_pos", StringOptions)
         .floatbe("y_pos", StringOptions)
         .uint16("target_id", StringOptions),
