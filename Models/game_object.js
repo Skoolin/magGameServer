@@ -7,4 +7,5 @@ module.exports = game_object = function (pos_x, pos_y) {
     this.origin_x = pos_x;
     this.origin_y = pos_y;
     this.type = 'none';
+    this.is_destructable = false;
 };
