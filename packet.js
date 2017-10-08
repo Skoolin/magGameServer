@@ -61,6 +61,12 @@ module.exports = packet = {
         return buffer;
     },
 
+    get4byteint: function (int) {
+        var buffer = new Buffer(4);
+        buffer.writeUInt32BE(int, 0);
+        return buffer;
+    },
+
     get1byte: function (int) {
         var buffer = new Buffer(1);
         buffer.writeUInt8(int, 0);

@@ -2,7 +2,7 @@
  * Created by skolin on 05.10.17.
  */
 var now = require('performance-now');
-var main = require('mainGameLoop');
+var main = require('./../mainGameLoop');
 module.exports = spells = {
     parse_spell: function(c, datapacket) {
         var data = PacketModels.cast.parse(datapacket);
@@ -17,6 +17,7 @@ module.exports = spells = {
             case 41: cast_moving_dmg_shield(c, data); break;
             case 24: cast_flash(c, data); break;
             case 32: cast_homing_attack(c, data); break;
+            case 45: cast_wall(c, data); break;
             case 114:
                 cast_fireball(c, data);
                 break;
@@ -74,7 +75,7 @@ function cast_moving_dmg_shield(c, data) {
     dmgshield.is_destructable = true;
 
     maps[c.user.current_room].game_objects.push(dmgshield);
-    c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(41), packet.get2byteShort(c.user._id), data.x_pos, data.y_pos, packet.get8byteLong(now())]));
+    c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(41), packet.get2byteShort(c.user._id), data.x_pos, data.y_pos, packet.get4byteint(dmgshield.id), packet.get8byteLong(now())]));
 }
 
 function cast_flash(c, data) {
@@ -118,9 +119,34 @@ function cast_homing_attack(c, data) {
         missile.speed = 30;
         missile.type = 'homing_attack';
         maps[user.current_room].game_objects.push(missile);
-        c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(32), packet.get2byteShort(user._id), data.target_id, packet.get8byteLong(now())]));
+        c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(32), packet.get2byteShort(user._id), packet.get2byteShort(data.target_id), packet.get8byteLong(now())]));
     }
 
+}
+
+function cast_wall(c, data) {
+
+    var target_x = data.x_pos;
+    var target_y = data.y_pos;
+
+    var x_dir = target_x - c.user.pos_x;
+    var y_dir = target_y - c.user.pos_y;
+
+    var len = Math.sqrt(x_dir*x_dir + y_dir*y_dir);
+
+    // TODO remove hardcoded value
+    var max_range = 8;
+    if (!(len < max_range)) {
+        target_x = c.user.pos.pos_x + (x_dir/len) * max_range;
+        target_y = c.user.pos_y + (y_dir/len) * max_range;
+    }
+
+    var wall = new game_object(target_x, target_y);
+    wall.is_destructable = true;
+    wall.health = 60;
+    wall.duration = 4;
+    wall.owner = c.user;
+    wall.type = 'wall';
 }
 
 function cast_fireball(c, data) {
