@@ -21,6 +21,9 @@ module.exports = packet = {
                 data = PacketModels.login.parse(datapacket);
                     User.login(data.username, data.password, function(result, user){
                         if(result) {
+                            user.hitbox_size = 1;
+                            user.id = game_object.obj_int_counter++;
+                            //TODO add user.distance, user.sqr_distance, user.hurt
                             c.user = user;
                             console.log("login: " + c.user.username);
                             c.enterroom(c.user.current_room);

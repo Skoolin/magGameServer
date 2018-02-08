@@ -32,7 +32,7 @@ function cast_shockwave(c, data) {
 }
 
 function cast_energyball(c, data) {
-    var energyball = new game_object(c.user.pos_x, c.user.pos_y);
+    var energyball = new game_object.game_object(c.user.pos_x, c.user.pos_y);
     var target_x = data.x_pos;
     var target_y = data.y_pos;
 
@@ -55,7 +55,7 @@ function cast_energyball(c, data) {
 }
 
 function cast_moving_dmg_shield(c, data) {
-    var dmgshield = new game_object(c.user.pos_x, c.user.pos_y);
+    var dmgshield = new game_object.game_object(c.user.pos_x, c.user.pos_y);
     var target_x = data.x_pos;
     var target_y = data.y_pos;
 
@@ -106,7 +106,7 @@ function cast_flash(c, data) {
 
 function cast_homing_attack(c, data) {
     var user = c.user;
-    var missile = new game_object(user.pos_x, user.pos_y);
+    var missile = new game_object.game_object(user.pos_x, user.pos_y);
     maps[user.current_room].clients.forEach(function (client) {
         if (client.user.id === data.target_id) {
             missile.target = client.user;
@@ -141,7 +141,7 @@ function cast_wall(c, data) {
         target_y = c.user.pos_y + (y_dir/len) * max_range;
     }
 
-    var wall = new game_object(target_x, target_y);
+    var wall = new game_object.game_object(target_x, target_y);
     wall.is_destructable = true;
     wall.health = 60;
     wall.duration = 4;
@@ -150,7 +150,7 @@ function cast_wall(c, data) {
 }
 
 function cast_fireball(c, data) {
-    var fireBall = new game_object(c.user.pos_x, c.user.pos_y);
+    var fireBall = new game_object.game_object(c.user.pos_x, c.user.pos_y);
     var target_x = data.x_pos;
     var target_y = data.y_pos;
 

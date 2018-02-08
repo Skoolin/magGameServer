@@ -28,6 +28,9 @@ module.exports = PacketModels = {
         .uint8("rune_1", StringOptions)
         .uint8("rune_2", StringOptions)
         .uint8("rune_3", StringOptions)
+        .uint8("key_1", StringOptions)
+        .uint8("key_2", StringOptions)
+        .uint8("key_3", StringOptions)
         .floatbe("x_pos", StringOptions)
         .floatbe("y_pos", StringOptions)
         .uint16("target_id", StringOptions),
