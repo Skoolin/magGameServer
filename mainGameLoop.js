@@ -3,7 +3,8 @@
  */
 var now = require('performance-now');
 var lastFrameTime = 0;
-var main = require('./mainGameLoop');
+require('./mainGameLoop');
+var utils = require('./game_logic/utils');
 
 module.exports = mainGameLoop = {
     run: function () {
@@ -14,7 +15,19 @@ module.exports = mainGameLoop = {
         var map = require(config.data_paths.maps + 'hometown');
         map.clients.forEach(function (client) {
             var user = client.user;
-            var sqDist = main.distSq(user.pos_x, user.pos_y, user.target_x, user.target_y);
+
+            var b_index = user.buffs.length;
+            while(b_index--) {
+                var buff = user.buffs[b_index];
+                buff.update(user,buff,data);
+                buff.duration -= delta;
+                if(buff.duration <= 0) {
+                    buff.on_remove(user,buff);
+                    user.buffs.splice(b_index,1);
+                }
+            }
+
+            var sqDist = mainGameLoop.distSq(user.pos_x, user.pos_y, user.target_x, user.target_y);
             if (sqDist > 0.6) {
                 var dist = Math.sqrt(sqDist);
                 user.pos_x -= delta * user.speed * (user.pos_x - user.target_x) / dist;
@@ -35,9 +48,9 @@ module.exports = mainGameLoop = {
                             return;
                         }
                         var user = client.user;
-                        var sqDist = main.distSq(user.pos_x, user.pos_y, obj.pos_x, obj.pos_y);
+                        var sqDist = mainGameLoop.distSq(user.pos_x, user.pos_y, obj.pos_x, obj.pos_y);
                         if (sqDist < obj.hitboxSize * obj.hitboxSize) {
-                            user.currentHealth -= obj.damage;
+                            utils.hurt(user, damage);
                             if(user.currentHealth <= 0) {
                                 user.currentHealth = 0;
                                 console.log('user died: ' + user.username);
@@ -61,15 +74,15 @@ module.exports = mainGameLoop = {
                                 continue;
                             }
 
-                            var sqDist = main.distSq(game_obj.pos_x, game_obj.pos_y, obj.pos_x, obj.pos_y);
+                            var sqDist = mainGameLoop.distSq(game_obj.pos_x, game_obj.pos_y, obj.pos_x, obj.pos_y);
                             if (sqDist < obj.hitboxSize * obj.hitboxSize) {
-                                game_obj.health -= obj.damage;
-                                if(game_obj.health <= 0) {
+                                utils.hurt(game_obj, obj.damage);
+                                if(game_obj.currentHealth <= 0) {
                                     client.broadcastroom(packet.build([packet.get1byte(13), packet.get2byteShort(game_obj.id)]));
                                     map.game_objects.splice(j, 1);
 
                                 } else {
-                                    client.broadcastroom(packet.build([packet.get1byte(12), packet.get2byteShort(game_obj.id), packet.get2byteShort(game_obj.health)]));
+                                    client.broadcastroom(packet.build([packet.get1byte(12), packet.get2byteShort(game_obj.id), packet.get2byteShort(game_obj.currentHealth)]));
                                 }
                                 map.game_objects.splice(i, 1);
                             }
@@ -79,7 +92,7 @@ module.exports = mainGameLoop = {
                     obj.pos_y += obj.speed * delta * obj.vel_y;
                     break;
                 case 'movdmgshield':
-                    if (obj.range < dist(obj.pos_x, obj.pos_y, obj.origin_x, obj.origin_y)) {
+                    if (obj.range < mainGameLoop.dist(obj.pos_x, obj.pos_y, obj.origin_x, obj.origin_y)) {
                         map.game_objects.splice(i, 1);
                         continue;
                     }
@@ -95,8 +108,8 @@ module.exports = mainGameLoop = {
                         }
                         })) {
                         // TODO not < 1 but calculate this value somehow
-                        if (main.distSq(obj.pos_x, obj.pos_y, obj.target.pos_x, obj.target.pos_y) < 1) {
-                            obj.target.currentHealth -= obj.damage;
+                        if (mainGameLoop.distSq(obj.pos_x, obj.pos_y, obj.target.pos_x, obj.target.pos_y) < 1) {
+                            utils.hurt(target, obj.damage);
                             if (obj.target.currentHealth <= 0) {
                                 obj.target.currentHealth = 0;
                                 console.log('user died: ' + user.username);
@@ -114,7 +127,7 @@ module.exports = mainGameLoop = {
                             var vel_x = obj.target.pos_x - obj.pos_x;
                             var vel_y = obj.target.pos_y - obj.pos_y;
 
-                            var dist = main.dist(obj.pos_x, obj.pos_y, obj.target.pos_x, obj.target.pos_y);
+                            var dist = mainGameLoop.dist(obj.pos_x, obj.pos_y, obj.target.pos_x, obj.target.pos_y);
 
                             vel_x /= dist;
                             vel_y /= dist;
@@ -140,11 +153,11 @@ module.exports = mainGameLoop = {
         }
     },
 
-    distSq: function(x, y, x2, y2) {
+    distSq: function (x, y, x2, y2) {
         return (x - x2) * (x - x2) + (y - y2) * (y - y2);
     },
 
-    dist: function(x, y, x2, y2) {
+    dist: function (x, y, x2, y2) {
         return Math.sqrt(this.distSq(x, y, x2, y2));
     }
 };

@@ -21,7 +21,8 @@ userSchema.statics.register = function (username, password, cb) {
 
     var team_id = Math.floor(Math.random()*2+1);
     var team_string = 'none';
-    var _pos_x, _pos_y;
+    var _pos_x = 320.0;
+    var _pos_y = 320.0;
     switch(team_id) {
         case 0:
             team_string = 'life';
@@ -63,6 +64,8 @@ userSchema.statics.login = function (username, password, cb) {
 
         if(!err && user) {
             if(user.password === password) {
+                user.buffs = [];
+                user.shields = [];
                 cb(true, user);
             } else {
                 cb(false, null);

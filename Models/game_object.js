@@ -14,6 +14,9 @@ module.exports = game_object = {
         this.type = 'none';
         this.is_destructable = false;
         this.team = 'environmental';
+
+        this.buffs = [];
+        this.shields = [];
     },
     obj_int_counter: 0
 };

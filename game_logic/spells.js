@@ -3,6 +3,11 @@
  */
 var now = require('performance-now');
 var main = require('./../mainGameLoop');
+var game_object = require('./../Models/game_object');
+var shield = require('./../Models/shield');
+var buff = require('./../Models/buff');
+require('./../packet.js');
+
 module.exports = spells = {
     parse_spell: function(c, datapacket) {
         var data = PacketModels.cast.parse(datapacket);
@@ -14,10 +19,12 @@ module.exports = spells = {
         switch (spell_id) {
             case 16: cast_shockwave(c, data); break;
             case 23: cast_energyball(c, data); break;
-            case 41: cast_moving_dmg_shield(c, data); break;
             case 24: cast_flash(c, data); break;
             case 32: cast_homing_attack(c, data); break;
+            case 41: cast_moving_dmg_shield(c, data); break;
             case 45: cast_wall(c, data); break;
+            case 55: cast_dmg_shield(c, data); break;
+            case 78: cast_resistance(c, data); break;
             case 114:
                 cast_fireball(c, data);
                 break;
@@ -26,10 +33,6 @@ module.exports = spells = {
         }
     }
 };
-
-function cast_shockwave(c, data) {
-    //TODO
-}
 
 function cast_energyball(c, data) {
     var energyball = new game_object.game_object(c.user.pos_x, c.user.pos_y);
@@ -69,7 +72,7 @@ function cast_moving_dmg_shield(c, data) {
     dmgshield.owner = c.user;
     dmgshield.range = 50;
     dmgshield.speed = 10;
-    dmgshield.health = 100;
+    dmgshield.currentHealth = 100;
     dmgshield.hitboxSize = 8;
     dmgshield.type = 'movdmgshield';
     dmgshield.is_destructable = true;
@@ -88,20 +91,20 @@ function cast_flash(c, data) {
     var len = Math.sqrt(x_dir*x_dir + y_dir*y_dir);
 
     // TODO remove hardcoded value
-    var max_range = 5;
+    var max_range = 30;
     if (len < max_range) {
-        c.pos_x = target_x;
-        c.pos_y = target_y;
-        c.target_x = target_x;
-        c.target_y = target_y;
+        c.user.pos_x = target_x;
+        c.user.pos_y = target_y;
+        c.user.target_x = target_x;
+        c.user.target_y = target_y;
     } else {
-        c.pos_x += (x_dir/len) * max_range;
-        c.pos_y += (y_dir/len) * max_range;
+        c.user.pos_x += (x_dir/len) * max_range;
+        c.user.pos_y += (y_dir/len) * max_range;
 
-        c.target_x = c.pos_x;
-        c.target_y = c.pos_y;
+        c.user.target_x = c.user.pos_x;
+        c.user.target_y = c.user.pos_y;
     }
-    c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(24), packet.get2byteShort(c.user._id), c.pos_x, c.pos_y, packet.get8byteLong(now())]));
+    c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(24), packet.get2byteShort(c.user._id), c.user.pos_x, c.user.pos_y, packet.get8byteLong(now())]));
 }
 
 function cast_homing_attack(c, data) {
@@ -137,13 +140,13 @@ function cast_wall(c, data) {
     // TODO remove hardcoded value
     var max_range = 8;
     if (!(len < max_range)) {
-        target_x = c.user.pos.pos_x + (x_dir/len) * max_range;
+        target_x = c.user.pos_x + (x_dir/len) * max_range;
         target_y = c.user.pos_y + (y_dir/len) * max_range;
     }
 
     var wall = new game_object.game_object(target_x, target_y);
     wall.is_destructable = true;
-    wall.health = 60;
+    wall.currentHealth = 60;
     wall.duration = 4;
     wall.owner = c.user;
     wall.type = 'wall';
@@ -172,8 +175,66 @@ function cast_fireball(c, data) {
     c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(114), packet.get2byteShort(c.user._id), data.x_pos, data.y_pos, packet.get8byteLong(now())]));
 }
 
+function cast_dmg_shield(c, data) {
+    var target;
+    maps[c.user.current_room].clients.forEach(function (client) {
+        if (client.user.id === data.target_id) {
+            target = client.user;
+        }
+    });
+
+    var max_range = 50;
+    if (target && main.distSq(user.pos_x, user.pos_y, target.pos_x, target.pos_y) <= max_range*max_range) {
+        var dmg_shield_buff = new buff.buff(3);
+        var shield = new shield.shield(100);
+        target.buffs.push(dmg_shield_buff);
+        target.shields.push(shield);
+        dmg_shield_buff.shield_id = shield.id;
+        dmg_shield_buff.on_remove = function (user, buff) {
+            var j = user.shields.length;
+            while (j--) {
+                var _shield = user.shields[j];
+                if(_shield.id === buff.shield_id) {
+                    user.shields.splice(j, 1);
+                }
+            }
+        };
+    }
+}
+
+function cast_shockwave(c, data) {
+    var user = c.user;
+    var knockback = 15;
+    var range = 30;
+    maps[user.current_room].clients.forEach(function (client) {
+        var other = client.user;
+        if(main.distSq(user.pos_x, user.pos_y, other.pos_x, other.pos_y) <= range * range) {
+            var x_dir = other.pos_x - user.pos_x;
+            var y_dir = other.pos_y - user.pos_y;
+            var len = Math.sqrt(x_dir*x_dir + y_dir*y_dir);
+            other.pos_x += (x_dir/len)*knockback;
+            other.pos_y += (y_dir/len)*knockback;
+        }
+    });
+}
+
+function cast_resistance(c, data) {
+    var target;
+    maps[c.user.current_room].clients.forEach(function (client) {
+        if (client.user.id === data.target_id) {
+            target = client.user;
+        }
+    });
+
+    var max_range = 50;
+    if (target && main.distSq(user.pos_x, user.pos_y, target.pos_x, target.pos_y) <= max_range*max_range) {
+        var resistance_buff = new buff.buff(3);
+        target.buffs.push(resistance_buff);
+        resistance_buff.resistance = 0.15;
+    }
+}
+
 function get_spell_id_from_runes(rune_1, rune_2, rune_3) {
-    console.log(rune_1 + ' ' + rune_2);
     switch (rune_1) {
         case 4:
             switch  (rune_2) {

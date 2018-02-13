@@ -5,6 +5,8 @@ var bufferConcat = require('buffer-concat');
 var zeroBuffer = new Buffer('00', 'hex');
 var now = require('performance-now');
 var spells = require('./game_logic/spells');
+var game_object = require('./Models/game_object');
+
 module.exports = packet = {
 
     parse: function(c, datapacket) {
