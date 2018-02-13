@@ -25,9 +25,7 @@ module.exports = spells = {
             case 45: cast_wall(c, data); break;
             case 55: cast_dmg_shield(c, data); break;
             case 78: cast_resistance(c, data); break;
-            case 114:
-                cast_fireball(c, data);
-                break;
+            case 114: cast_fireball(c, data); break;
             default:
                 break;
         }
@@ -150,6 +148,7 @@ function cast_wall(c, data) {
     wall.duration = 4;
     wall.owner = c.user;
     wall.type = 'wall';
+    c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(45), packet.get2byteShort(c.user._id), target_x, target_y, packet.get4byteint(wall.id), packet.get8byteLong(now())]));
 }
 
 function cast_fireball(c, data) {
@@ -199,6 +198,7 @@ function cast_dmg_shield(c, data) {
                 }
             }
         };
+        c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(55), packet.get2byteShort(user._id), packet.get2byteShort(data.target_id), packet.get8byteLong(now())]));
     }
 }
 
@@ -216,6 +216,7 @@ function cast_shockwave(c, data) {
             other.pos_y += (y_dir/len)*knockback;
         }
     });
+    c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(16), packet.get2byteShort(user._id), packet.get8byteLong(now())]));
 }
 
 function cast_resistance(c, data) {
@@ -232,6 +233,7 @@ function cast_resistance(c, data) {
         target.buffs.push(resistance_buff);
         resistance_buff.resistance = 0.15;
     }
+    c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(78), packet.get2byteShort(user._id), packet.get2byteShort(data.target_id), packet.get8byteLong(now())]));
 }
 
 function get_spell_id_from_runes(rune_1, rune_2, rune_3) {
