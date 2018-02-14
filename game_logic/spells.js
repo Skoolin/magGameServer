@@ -7,6 +7,7 @@ var game_object = require('./../Models/game_object');
 var shield = require('./../Models/shield');
 var buff = require('./../Models/buff');
 require('./../packet.js');
+var utils = require('./utils');
 
 module.exports = spells = {
     parse_spell: function(c, datapacket) {
@@ -23,6 +24,7 @@ module.exports = spells = {
             case 32: cast_homing_attack(c, data); break;
             case 41: cast_moving_dmg_shield(c, data); break;
             case 45: cast_wall(c, data); break;
+            case 53: cast_dmg_red_area(c, data); break;
             case 55: cast_dmg_shield(c, data); break;
             case 78: cast_resistance(c, data); break;
             case 114: cast_fireball(c, data); break;
@@ -47,7 +49,7 @@ function cast_energyball(c, data) {
     energyball.owner = c.user;
     energyball.range = 100;
     energyball.speed = 25;
-    energyball.damage = 50;
+    energyball.damage = utils.calc_dmg(c.user, 50);
     energyball.hitboxSize = 4;
     energyball.type = 'projectile';
 
@@ -116,7 +118,7 @@ function cast_homing_attack(c, data) {
 
     var max_range = 40;
     if (main.distSq(user.pos_x, user.pos_y, missile.target.pos_x, missile.target.pos_y) <= max_range*max_range) {
-        missile.damage = 15;
+        missile.damage = utils.calc_dmg(user, 15);
         missile.speed = 30;
         missile.type = 'homing_attack';
         maps[user.current_room].game_objects.push(missile);
@@ -166,7 +168,7 @@ function cast_fireball(c, data) {
     fireBall.owner = c.user;
     fireBall.range = 100;
     fireBall.speed = 25;
-    fireBall.damage = 50;
+    fireBall.damage = utils.calc_dmg(c.user, 50);
     fireBall.hitboxSize = 4;
     fireBall.type = 'projectile';
 
@@ -206,6 +208,9 @@ function cast_shockwave(c, data) {
     var user = c.user;
     var knockback = 15;
     var range = 30;
+    var packet_data = [packet.get1byte(2), packet.get2byteShort(16), packet.get2byteShort(user._id), packet.get8byteLong(now())];
+    var packet_user_data = [];
+    var number_of_pushed_users = 0;
     maps[user.current_room].clients.forEach(function (client) {
         var other = client.user;
         if(main.distSq(user.pos_x, user.pos_y, other.pos_x, other.pos_y) <= range * range) {
@@ -214,9 +219,14 @@ function cast_shockwave(c, data) {
             var len = Math.sqrt(x_dir*x_dir + y_dir*y_dir);
             other.pos_x += (x_dir/len)*knockback;
             other.pos_y += (y_dir/len)*knockback;
+
+            number_of_pushed_users += 1;
+            packet_user_data.push(packet.get2byteShort(other._id), other.pos_x, other.pos_y);
         }
     });
-    c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(16), packet.get2byteShort(user._id), packet.get8byteLong(now())]));
+    packet_data.push(packet.get1byte(number_of_pushed_users));
+    packet_data = packet_data.concat(packet_user_data);
+    c.broadcastroom(packet.build(packet_data));
 }
 
 function cast_resistance(c, data) {
@@ -234,6 +244,33 @@ function cast_resistance(c, data) {
         resistance_buff.resistance = 0.15;
     }
     c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(78), packet.get2byteShort(user._id), packet.get2byteShort(data.target_id), packet.get8byteLong(now())]));
+}
+
+function cast_dmg_red_area(c, data) {
+    var target_x = data.x_pos;
+    var target_y = data.y_pos;
+
+    var x_dir = target_x - c.user.pos_x;
+    var y_dir = target_y - c.user.pos_y;
+
+    var len = Math.sqrt(x_dir*x_dir + y_dir*y_dir);
+
+    // TODO remove hardcoded value
+    var max_range = 30;
+    var dmg_red_area_duration = 6;
+    var dmg_red_area_hitbox_size = 12;
+    if (len < max_range) {
+        var area = new game_object.game_object(target_x, target_y);
+        area.vel_x = 0;
+        area.vel_y = 0;
+        area.duration = dmg_red_area_duration;
+        area.owner = c.user;
+        area.hitboxSize = dmg_red_area_hitbox_size;
+        area.type = 'dmg_red_area';
+
+        maps[c.user.current_room].game_objects.push(area);
+        c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(53), packet.get2byteShort(c.user._id), c.user.pos_x, c.user.pos_y, packet.get8byteLong(now())]));
+    }
 }
 
 function get_spell_id_from_runes(rune_1, rune_2, rune_3) {

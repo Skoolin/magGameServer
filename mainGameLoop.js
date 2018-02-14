@@ -5,6 +5,7 @@ var now = require('performance-now');
 var lastFrameTime = 0;
 require('./mainGameLoop');
 var utils = require('./game_logic/utils');
+var buff = require('./Models/buff');
 
 module.exports = mainGameLoop = {
     run: function () {
@@ -50,7 +51,7 @@ module.exports = mainGameLoop = {
                         var user = client.user;
                         var sqDist = mainGameLoop.distSq(user.pos_x, user.pos_y, obj.pos_x, obj.pos_y);
                         if (sqDist < obj.hitboxSize * obj.hitboxSize) {
-                            utils.hurt(user, damage);
+                            utils.hurt(user, obj.damage);
                             if(user.currentHealth <= 0) {
                                 user.currentHealth = 0;
                                 console.log('user died: ' + user.username);
@@ -145,6 +146,34 @@ module.exports = mainGameLoop = {
                     } else {
                         obj.duration -= delta;
                     }
+                    break;
+                case 'dmg_red_area':
+                    if (obj.range < this.dist(obj.pos_x, obj.pos_y, obj.origin_x, obj.origin_y)) {
+                        map.game_objects.splice(i, 1);
+                        continue;
+                    }
+                    map.clients.forEach(function (client) {
+                        if(client.user === obj.owner) {
+                            return;
+                        }
+                        var user = client.user;
+                        var sqDist = mainGameLoop.distSq(user.pos_x, user.pos_y, obj.pos_x, obj.pos_y);
+                        if (sqDist < obj.hitboxSize * obj.hitboxSize) {
+                            var found = false;
+                            user.buffs.forEach(function (buff) {
+                               if(buff.type === 'dmg_red_area') {
+                                   buff.duration = 0.5;
+                                   found = true;
+                               }
+                            });
+                            if (!found) {
+                                var dmg_red_buff = new buff.buff(0.5);
+                                dmg_red_buff.type = 'dmg_red_area';
+                                dmg_red_buff.dmg_reduction = 0.2;
+                                user.buffs.push(dmg_red_buff);
+                            }
+                        }
+                    });
                     break;
                 default:
                     map.game_objects.splice(i, 1);

@@ -24,5 +24,21 @@ module.exports = utils = {
         }
 
         object.currentHealth -= amount;
+    },
+
+    calc_dmg: function(object, base_dmg) {
+        var dmg_increase = 0;
+        var dmg_reduction = 0;
+        object.buffs.forEach(function (buff) {
+            if (buff.dmg_reduction) {
+                dmg_reduction = Math.min(dmg_reduction + buff.dmg_reduction, 0.6);
+                // 0.6 is maximum reduction
+            } else if (buff.dmg_increase) {
+                dmg_increase = Math.min(dmg_increase + buff.dmg_increase, 1.5);
+                // 1.5 is maximum increase
+            }
+        });
+
+        return base_dmg * (1 - dmg_reduction + dmg_increase);
     }
 };
