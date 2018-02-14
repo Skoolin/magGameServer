@@ -221,7 +221,7 @@ function cast_shockwave(c, data) {
             other.pos_y += (y_dir/len)*knockback;
 
             number_of_pushed_users += 1;
-            packet_user_data.push(packet.get2byteShort(other._id), other.pos_x, other.pos_y);
+            packet_user_data.push(packet.get4byteint(other._id), packet.get1byte(1), other.pos_x, other.pos_y);
         }
     });
     packet_data.push(packet.get1byte(number_of_pushed_users));
