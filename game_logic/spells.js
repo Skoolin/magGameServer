@@ -10,6 +10,12 @@ require('./../packet.js');
 var utils = require('./utils');
 
 module.exports = spells = {
+    /**
+     * gets the cast spell from the datapacket, checks if valid and calculates results.
+     *
+     * @param c client
+     * @param datapacket a datapacket object
+     */
     parse_spell: function(c, datapacket) {
         var data = PacketModels.cast.parse(datapacket);
         //TODO check whether spell is allowed by player
@@ -34,6 +40,12 @@ module.exports = spells = {
     }
 };
 
+/**
+ * Casts an Energy-Ball game_object.
+ *
+ * @param c
+ * @param data
+ */
 function cast_energyball(c, data) {
     var energyball = new game_object.game_object(c.user.pos_x, c.user.pos_y);
     var target_x = data.x_pos;
@@ -57,6 +69,12 @@ function cast_energyball(c, data) {
     c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(23), packet.get2byteShort(c.user._id), data.x_pos, data.y_pos, packet.get8byteLong(now())]));
 }
 
+/**
+ * casts a moving damage shield game_object.
+ *
+ * @param c
+ * @param data
+ */
 function cast_moving_dmg_shield(c, data) {
     var dmgshield = new game_object.game_object(c.user.pos_x, c.user.pos_y);
     var target_x = data.x_pos;
@@ -81,6 +99,12 @@ function cast_moving_dmg_shield(c, data) {
     c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(41), packet.get2byteShort(c.user._id), data.x_pos, data.y_pos, packet.get4byteint(dmgshield.id), packet.get8byteLong(now())]));
 }
 
+/**
+ * relocates the player into the direction specified in the datapacket
+ *
+ * @param c
+ * @param data
+ */
 function cast_flash(c, data) {
     var target_x = data.x_pos;
     var target_y = data.y_pos;
@@ -107,6 +131,12 @@ function cast_flash(c, data) {
     c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(24), packet.get2byteShort(c.user._id), c.user.pos_x, c.user.pos_y, packet.get8byteLong(now())]));
 }
 
+/**
+ * spawns a target following missile game_object
+ *
+ * @param c
+ * @param data
+ */
 function cast_homing_attack(c, data) {
     var user = c.user;
     var missile = new game_object.game_object(user.pos_x, user.pos_y);
@@ -127,6 +157,12 @@ function cast_homing_attack(c, data) {
 
 }
 
+/**
+ * spawns a time-limited wall which can block damage
+ *
+ * @param c
+ * @param data
+ */
 function cast_wall(c, data) {
 
     var target_x = data.x_pos;
@@ -153,6 +189,12 @@ function cast_wall(c, data) {
     c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(45), packet.get2byteShort(c.user._id), target_x, target_y, packet.get4byteint(wall.id), packet.get8byteLong(now())]));
 }
 
+/**
+ * spawns a projectile
+ *
+ * @param c
+ * @param data
+ */
 function cast_fireball(c, data) {
     var fireBall = new game_object.game_object(c.user.pos_x, c.user.pos_y);
     var target_x = data.x_pos;
@@ -176,6 +218,12 @@ function cast_fireball(c, data) {
     c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(114), packet.get2byteShort(c.user._id), data.x_pos, data.y_pos, packet.get8byteLong(now())]));
 }
 
+/**
+ * buffs a user with a time-limited shield
+ *
+ * @param c
+ * @param data
+ */
 function cast_dmg_shield(c, data) {
     var target;
     maps[c.user.current_room].clients.forEach(function (client) {
@@ -204,6 +252,12 @@ function cast_dmg_shield(c, data) {
     }
 }
 
+/**
+ * knocks all users near the casting player away from him
+ *
+ * @param c
+ * @param data
+ */
 function cast_shockwave(c, data) {
     var user = c.user;
     var knockback = 15;
@@ -229,6 +283,12 @@ function cast_shockwave(c, data) {
     c.broadcastroom(packet.build(packet_data));
 }
 
+/**
+ * buffs the targeted player with a resistance buff
+ *
+ * @param c
+ * @param data
+ */
 function cast_resistance(c, data) {
     var target;
     maps[c.user.current_room].clients.forEach(function (client) {
@@ -246,6 +306,14 @@ function cast_resistance(c, data) {
     c.broadcastroom(packet.build([packet.get1byte(2), packet.get2byteShort(78), packet.get2byteShort(user._id), packet.get2byteShort(data.target_id), packet.get8byteLong(now())]));
 }
 
+/**
+ * puts a damage reduction area game_object on the position specified in data
+ * the field will debuff all mages on top of itself.
+ * it is duration-limited.
+ *
+ * @param c
+ * @param data
+ */
 function cast_dmg_red_area(c, data) {
     var target_x = data.x_pos;
     var target_y = data.y_pos;
@@ -273,6 +341,14 @@ function cast_dmg_red_area(c, data) {
     }
 }
 
+/**
+ * gets the spell id from runes
+ *
+ * @param rune_1
+ * @param rune_2
+ * @param rune_3
+ * @returns {number}
+ */
 function get_spell_id_from_runes(rune_1, rune_2, rune_3) {
     switch (rune_1) {
         case 4:

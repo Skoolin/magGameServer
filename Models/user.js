@@ -16,6 +16,13 @@ var userSchema = new mongoose.Schema({
 
 });
 
+/**
+ * tries to add user into the database of registered users
+ *
+ * @param username
+ * @param password
+ * @param cb callback function cb(accepted?)
+ */
 userSchema.statics.register = function (username, password, cb) {
 
 
@@ -58,6 +65,13 @@ userSchema.statics.register = function (username, password, cb) {
 
 };
 
+/**
+ * tries to locate user in database of registered users.
+ *
+ * @param username
+ * @param password
+ * @param cb callback function (succesfull?, user)
+ */
 userSchema.statics.login = function (username, password, cb) {
 
     User.findOne({username: username}, function(err, user){

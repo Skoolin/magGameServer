@@ -2,6 +2,12 @@
  * Created by skolin on 13.02.18.
  */
 module.exports = utils = {
+    /**
+     * applies damage to mages or game_objects, taking buffs into account
+     *
+     * @param object
+     * @param amount
+     */
     hurt: function(object, amount) {
         var resistance = 0;
         object.buffs.forEach(function (buff) {
@@ -26,6 +32,13 @@ module.exports = utils = {
         object.currentHealth -= amount;
     },
 
+    /**
+     * applies buffs of a user onto the base dmg of an attack
+     *
+     * @param object
+     * @param base_dmg
+     * @returns {number}
+     */
     calc_dmg: function(object, base_dmg) {
         var dmg_increase = 0;
         var dmg_reduction = 0;
